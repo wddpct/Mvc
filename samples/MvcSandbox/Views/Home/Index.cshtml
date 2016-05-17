@@ -1,12 +1,18 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
+    Layout = null;
 }
 
-<div class="row">
-    <div class="col-md-3">
-        <h2>Sandbox</h2>
-        <ul>
-            <li>This sandbox should give you a quick view of a basic MVC application.</li>
-        </ul>
-    </div>
+<div>
+    <form action="/home/upload" method="post" enctype="multipart/form-data">
+        <p>
+            <label for="firstname">Description:</label>
+            <input type="text" name="description" value="Foo" /><BR>
+            <label for="myfile1">File 1:</label>
+            <input type="file" name="myfile1" /><BR>
+            <label for="myfile2">File 2:</label>
+            <input type="file" name="myfile2" /><BR>
+            <input type="submit" value="Send" />
+        </p>
+    </form>
 </div>
