@@ -32,6 +32,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                 throw new ArgumentNullException(nameof(context));
             }
 
+            Console.WriteLine(">>>>>>>>>>>>>>>>Inside RenderAtEndOfFormTagHelper.Init. New FormContext created");
             // Push the new FormContext.
             ViewContext.FormContext = new FormContext
             {
@@ -64,6 +65,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                 }
             }
 
+            Console.WriteLine(">>>>>>>>>>>>>>>>Inside RenderAtEndOfFormTagHelper.ProcessAsync. Reset the formcontext by creating a new one.");
             // Reset the FormContext
             ViewContext.FormContext = new FormContext();
         }

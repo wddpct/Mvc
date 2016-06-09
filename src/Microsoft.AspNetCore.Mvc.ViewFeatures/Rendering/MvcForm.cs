@@ -5,6 +5,7 @@ using System;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Mvc.ViewFeatures.Internal;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Mvc.Rendering
 {
@@ -65,6 +66,19 @@ namespace Microsoft.AspNetCore.Mvc.Rendering
         {
             RenderEndOfFormContent();
             _viewContext.Writer.Write("</form>");
+
+            var lf = _viewContext.HttpContext.RequestServices.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+            ILogger logger = null;
+            if (lf != null)
+            {
+                logger = lf.CreateLogger(typeof(MvcForm).FullName);
+            }
+
+            if (logger != null)
+            {
+                logger.LogInformation("Inside MvcForm.GenerateEndForm. New formcontext instance created");
+            }
+
             _viewContext.FormContext = new FormContext();
         }
 

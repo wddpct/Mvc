@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Mvc.ViewFeatures.Internal;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Mvc.Rendering
 {
@@ -82,8 +83,20 @@ namespace Microsoft.AspNetCore.Mvc.Rendering
             TempData = tempData;
             Writer = writer;
 
+            var lf = actionContext.HttpContext.RequestServices.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+            ILogger logger = null;
+            if (lf != null)
+            {
+                logger = lf.CreateLogger(typeof(ViewContext).FullName);
+            }
+
+            if (logger != null)
+            {
+                logger.LogInformation("Inside ViewContext.'s constructor");
+            }
+
             FormContext = new FormContext();
-            
+
             ClientValidationEnabled = htmlHelperOptions.ClientValidationEnabled;
             Html5DateRenderingMode = htmlHelperOptions.Html5DateRenderingMode;
             ValidationSummaryMessageElement = htmlHelperOptions.ValidationSummaryMessageElement;

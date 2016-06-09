@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures.Internal;
 using Microsoft.Extensions.Internal;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Mvc.ViewFeatures
 {
@@ -271,6 +272,18 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             bool? antiforgery,
             object htmlAttributes)
         {
+            var lf = _viewContext.HttpContext.RequestServices.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+            ILogger logger = null;
+            if(lf != null)
+            {
+                logger = lf.CreateLogger(typeof(HtmlHelper).FullName);
+            }
+
+            if(logger != null)
+            {
+                logger.LogInformation("Inside HtmlHelper.BeginForm. Creating new FormContext");
+            }
+
             // Push the new FormContext; MvcForm.GenerateEndForm() does the corresponding pop.
             _viewContext.FormContext = new FormContext
             {
@@ -288,6 +301,18 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
             bool? antiforgery,
             object htmlAttributes)
         {
+            var lf = _viewContext.HttpContext.RequestServices.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+            ILogger logger = null;
+            if (lf != null)
+            {
+                logger = lf.CreateLogger(typeof(HtmlHelper).FullName);
+            }
+
+            if (logger != null)
+            {
+                logger.LogInformation("Inside HtmlHelper.BeginRouteForm. Creating new FormContext");
+            }
+
             // Push the new FormContext; MvcForm.GenerateEndForm() does the corresponding pop.
             _viewContext.FormContext = new FormContext
             {
