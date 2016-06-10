@@ -3,6 +3,7 @@
 
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
@@ -56,11 +57,16 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
             await output.GetChildContentAsync();
 
             var formContext = ViewContext.FormContext;
+            Console.WriteLine($">>>>>>>>>>>>>>>>Inside RenderAtEndOfFormTagHelper.ProcessAsync: ViewContext.FormContext.HasEndOfFormContent value is {ViewContext.FormContext.HasEndOfFormContent}");
             if (formContext.HasEndOfFormContent)
             {
                 // Perf: Avoid allocating enumerator
                 for (var i = 0; i < formContext.EndOfFormContent.Count; i++)
                 {
+                    var sw = new StringWriter();
+                    formContext.EndOfFormContent[i].WriteTo(sw, NullHtmlEncoder.Default);
+                    Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>RenderAtEndFormTagHelper's end of form content:" + sw.ToString());
+                    sw.Dispose();
                     output.PostContent.AppendHtml(formContext.EndOfFormContent[i]);
                 }
             }

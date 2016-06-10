@@ -76,7 +76,7 @@ namespace Microsoft.AspNetCore.Mvc.Rendering
 
             if (logger != null)
             {
-                logger.LogInformation("Inside MvcForm.GenerateEndForm. New formcontext instance created");
+                logger.LogInformation(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Inside MvcForm.GenerateEndForm. New formcontext instance created");
             }
 
             _viewContext.FormContext = new FormContext();
@@ -84,6 +84,18 @@ namespace Microsoft.AspNetCore.Mvc.Rendering
 
         private void RenderEndOfFormContent()
         {
+            var lf = _viewContext.HttpContext.RequestServices.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+            ILogger logger = null;
+            if (lf != null)
+            {
+                logger = lf.CreateLogger(typeof(MvcForm).FullName);
+            }
+
+            if (logger != null)
+            {
+                logger.LogInformation($">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Inside MvcForm.RenderEndOfFormContent. HasEndofFormcontent? {_viewContext.FormContext.HasEndOfFormContent}");
+            }
+
             var formContext = _viewContext.FormContext;
             if (!formContext.HasEndOfFormContent)
             {

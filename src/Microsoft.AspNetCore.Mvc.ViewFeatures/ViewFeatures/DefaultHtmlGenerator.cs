@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Mvc.ViewFeatures.Internal;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.AspNetCore.Mvc.ViewFeatures
@@ -156,15 +157,34 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures
                 throw new ArgumentNullException(nameof(viewContext));
             }
 
+            var lf = viewContext.HttpContext.RequestServices.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+            ILogger logger = null;
+            if (lf != null)
+            {
+                logger = lf.CreateLogger(typeof(DefaultHtmlGenerator).FullName);
+            }
+
+
+
             // If we're inside a BeginForm/BeginRouteForm, the antiforgery token might have already been
             // created and appended to the 'end form' content OR the form tag helper might have already generated
             // an antiforgery token.
             if (viewContext.FormContext.HasAntiforgeryToken)
             {
+                if (logger != null)
+                {
+                    logger.LogInformation(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Antiforgery token already generated, so ignoring");
+                }
+
                 return HtmlString.Empty;
             }
 
             viewContext.FormContext.HasAntiforgeryToken = true;
+
+            if (logger != null)
+            {
+                logger.LogInformation(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Antiforgery NOT generated, so generating a new one");
+            }
 
             return _antiforgery.GetHtml(viewContext.HttpContext);
         }

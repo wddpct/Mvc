@@ -4,9 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Mvc.TagHelpers
 {
@@ -235,11 +237,24 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                 }
             }
 
+            var lf = ViewContext.HttpContext.RequestServices.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+            ILogger logger = null;
+            if (lf != null)
+            {
+                logger = lf.CreateLogger(typeof(FormTagHelper).FullName);
+            }
+
             if (Antiforgery ?? antiforgeryDefault)
             {
+                logger.LogInformation(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Calling html generator to generate antiforgery");
+
                 var antiforgeryTag = Generator.GenerateAntiforgery(ViewContext);
                 if (antiforgeryTag != null)
                 {
+                    var sw = new StringWriter();
+                    antiforgeryTag.WriteTo(sw, NullHtmlEncoder.Default);
+                    logger.LogInformation(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Appending antiforgery tag to post content html. Content:" + sw.ToString());
+                    sw.Dispose();
                     output.PostContent.AppendHtml(antiforgeryTag);
                 }
             }

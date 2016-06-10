@@ -92,7 +92,7 @@ namespace Microsoft.AspNetCore.Mvc.Rendering
 
             if (logger != null)
             {
-                logger.LogInformation("Inside ViewContext.'s constructor");
+                logger.LogInformation(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Inside ViewContext.'s constructor");
             }
 
             FormContext = new FormContext();
@@ -136,6 +136,7 @@ namespace Microsoft.AspNetCore.Mvc.Rendering
             {
                 throw new ArgumentNullException(nameof(writer));
             }
+
 
             FormContext = viewContext.FormContext;
 
