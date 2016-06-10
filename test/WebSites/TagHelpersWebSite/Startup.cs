@@ -5,6 +5,7 @@ using System.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace TagHelpersWebSite
 {
@@ -16,8 +17,10 @@ namespace TagHelpersWebSite
             services.AddMvc();
         }
 
-        public void Configure(IApplicationBuilder app)
+        public void Configure(IApplicationBuilder app, ILoggerFactory loggerfactory)
         {
+            loggerfactory.AddConsole(LogLevel.Debug);
+
             app.UseCultureReplacer();
 
             app.UseMvcWithDefaultRoute();
