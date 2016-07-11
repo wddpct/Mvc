@@ -16,7 +16,7 @@ using Xunit;
 
 namespace Microsoft.AspNetCore.Mvc.IntegrationTests
 {
-    // Integration tests targeting the behavior of the MutableObjectModelBinder and related classes
+    // Integration tests targeting the behavior of the ComplexTypeModelBinder and related classes
     // with other model binders.
     public class MutableObjectModelBinderIntegrationTest
     {
@@ -2124,6 +2124,51 @@ namespace Microsoft.AspNetCore.Mvc.IntegrationTests
             Assert.NotNull(entry);
             Assert.Empty(entry.Errors);
             Assert.Equal(ModelValidationState.Valid, entry.ValidationState);
+        }
+
+        private class Product
+        {
+            public int ProductId { get; set; }
+
+            public string Name { get; }
+
+            public IList<string> Aliases { get; }
+        }
+
+        [Theory]
+        [InlineData("?parameter.ProductId=10")]
+        [InlineData("?parameter.ProductId=10&parameter.Name=Camera")]
+        [InlineData("?parameter.ProductId=10&parameter.Name=Camera&parameter.Aliases[0]=Camera1")]
+        public async Task MutableObjectModelBinder_BindsSettableProperties(string queryString)
+        {
+            // Arrange
+            var argumentBinder = ModelBindingTestHelper.GetArgumentBinder();
+            var parameter = new ParameterDescriptor()
+            {
+                Name = "parameter",
+                ParameterType = typeof(Product)
+            };
+
+            // Need to have a key here so that the MutableObjectModelBinder will recurse to bind elements.
+            var testContext = ModelBindingTestHelper.GetTestContext(request =>
+            {
+                request.QueryString = new QueryString(queryString);
+                SetJsonBodyContent(request, AddressBodyContent);
+            });
+
+            var modelState = testContext.ModelState;
+
+            // Act
+            var modelBindingResult = await argumentBinder.BindModelAsync(parameter, testContext);
+
+            // Assert
+            Assert.True(modelBindingResult.IsModelSet);
+
+            var model = Assert.IsType<Product>(modelBindingResult.Model);
+            Assert.NotNull(model);
+            Assert.Equal(10, model.ProductId);
+            Assert.Null(model.Name);
+            Assert.Null(model.Aliases);
         }
 
         private static void SetJsonBodyContent(HttpRequest request, string content)

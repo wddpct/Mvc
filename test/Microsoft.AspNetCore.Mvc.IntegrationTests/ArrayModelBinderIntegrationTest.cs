@@ -327,5 +327,41 @@ namespace Microsoft.AspNetCore.Mvc.IntegrationTests
             Assert.Equal(0, modelState.ErrorCount);
             Assert.True(modelState.IsValid);
         }
+
+        private class PersonWithReadOnly
+        {
+            public string Name { get; set; }
+
+            public string[] Aliases { get; }
+        }
+
+        [Fact]
+        public async Task ArrayModelBinder_BindsArrayOfComplexType_WithPrefix_Success_ReadOnly()
+        {
+            // Arrange
+            var argumentBinder = ModelBindingTestHelper.GetArgumentBinder();
+            var parameter = new ParameterDescriptor()
+            {
+                Name = "parameter",
+                ParameterType = typeof(PersonWithReadOnly)
+            };
+
+            var testContext = ModelBindingTestHelper.GetTestContext(request =>
+            {
+                request.QueryString = new QueryString("?parameter.Name=James&parameter.Aliases[0]=bill&parameter.Aliases[1]=william");
+            });
+
+            var modelState = testContext.ModelState;
+
+            // Act
+            var modelBindingResult = await argumentBinder.BindModelAsync(parameter, testContext);
+
+            // Assert
+            Assert.True(modelBindingResult.IsModelSet);
+
+            var model = Assert.IsType<PersonWithReadOnly>(modelBindingResult.Model);
+            Assert.Equal("James", model.Name);
+            Assert.Null(model.Aliases);
+        }
     }
 }
