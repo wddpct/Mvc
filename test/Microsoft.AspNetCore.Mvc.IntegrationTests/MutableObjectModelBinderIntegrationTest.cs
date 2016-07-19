@@ -16,7 +16,7 @@ using Xunit;
 
 namespace Microsoft.AspNetCore.Mvc.IntegrationTests
 {
-    // Integration tests targeting the behavior of the ComplexTypeModelBinder and related classes
+    // Integration tests targeting the behavior of the MutableObjectModelBinder and related classes
     // with other model binders.
     public class MutableObjectModelBinderIntegrationTest
     {

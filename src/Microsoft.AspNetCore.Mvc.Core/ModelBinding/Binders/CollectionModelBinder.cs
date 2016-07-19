@@ -51,7 +51,19 @@ namespace Microsoft.AspNetCore.Mvc.ModelBinding.Binders
                 throw new ArgumentNullException(nameof(bindingContext));
             }
 
+            // For properties like the following, where the properties are get only but the actual model
+            // instance is an array, do not model bind.
+            //      public IEnumerable<> Addresses { get; } = new Address[] { };
+            //      public ICollection<> Addresses { get; } = new Address[] { };
             var model = bindingContext.Model;
+            var runtimeType = model?.GetType();
+            if (runtimeType != null
+                && runtimeType.IsArray
+                && bindingContext.ModelMetadata.IsReadOnly)
+            {
+                return;
+            }
+
             if (!bindingContext.ValueProvider.ContainsPrefix(bindingContext.ModelName))
             {
                 // If we failed to find data for a top-level model, then generate a
