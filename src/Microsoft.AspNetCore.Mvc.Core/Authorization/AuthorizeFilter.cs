@@ -78,7 +78,6 @@ namespace Microsoft.AspNetCore.Mvc.Authorization
             }
 
             var effectivePolicy = Policy ?? await AuthorizationPolicy.CombineAsync(PolicyProvider, AuthorizeData);
-
             if (effectivePolicy == null)
             {
                 return;
