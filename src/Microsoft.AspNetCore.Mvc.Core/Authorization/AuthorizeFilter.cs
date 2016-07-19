@@ -69,6 +69,8 @@ namespace Microsoft.AspNetCore.Mvc.Authorization
         /// </summary>
         public AuthorizationPolicy Policy { get; private set; }
 
+        private bool _policyCached = false;
+
         /// <inheritdoc />
         public virtual async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
@@ -77,7 +79,22 @@ namespace Microsoft.AspNetCore.Mvc.Authorization
                 throw new ArgumentNullException(nameof(context));
             }
 
-            var effectivePolicy = Policy ?? await AuthorizationPolicy.CombineAsync(PolicyProvider, AuthorizeData);
+            AuthorizationPolicy effectivePolicy;
+            if (Policy == null && !_policyCached)
+            {
+                effectivePolicy = await AuthorizationPolicy.CombineAsync(PolicyProvider, AuthorizeData);
+                if (PolicyProvider is DefaultAuthorizationPolicyProvider)
+                {
+                    _policyCached = true;
+                    Policy = effectivePolicy;
+                }
+            }
+            else
+            {
+                effectivePolicy = Policy;
+            }
+
+
             if (effectivePolicy == null)
             {
                 return;
