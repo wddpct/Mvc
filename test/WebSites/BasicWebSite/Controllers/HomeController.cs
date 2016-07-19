@@ -16,7 +16,7 @@ namespace BasicWebSite.Controllers
             return View();
         }
 
-        public IActionResult PlainView()
+        public object PlainView()
         {
             return View();
         }
