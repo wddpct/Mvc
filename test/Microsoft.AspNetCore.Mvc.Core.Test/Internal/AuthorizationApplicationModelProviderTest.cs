@@ -81,6 +81,29 @@ namespace Microsoft.AspNetCore.Mvc.Internal
             Assert.Single(action.Filters, f => f is AllowAnonymousFilter);
         }
 
+        [Fact]
+        public void CreateControllerModelAndActionModel_NoAuthNoFilter()
+        {
+            // Arrange
+            var provider = new AuthorizationApplicationModelProvider(
+                new DefaultAuthorizationPolicyProvider(
+                    new TestOptionsManager<AuthorizationOptions>()
+                ));
+            var defaultProvider = new DefaultApplicationModelProvider(new TestOptionsManager<MvcOptions>());
+
+            var context = new ApplicationModelProviderContext(new[] { typeof(NoAuthController).GetTypeInfo() });
+            defaultProvider.OnProvidersExecuting(context);
+
+            // Act
+            provider.OnProvidersExecuting(context);
+
+            // Assert
+            var controller = Assert.Single(context.Result.Controllers);
+            Assert.Empty(controller.Filters);
+            var action = Assert.Single(controller.Actions);
+            Assert.Empty(action.Filters);
+        }
+
         private class BaseController
         {
             [Authorize(Policy = "Base")]
@@ -100,6 +123,12 @@ namespace Microsoft.AspNetCore.Mvc.Internal
         [Authorize]
         public class AccountController
         {
+        }
+
+        public class NoAuthController
+        {
+            public void NoAuthAction()
+            { }
         }
 
         [AllowAnonymous]
