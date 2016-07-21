@@ -59,6 +59,8 @@ namespace Microsoft.AspNetCore.Mvc.Razor
                 writer.WriteLine($"using {ChunkHelper.TModelToken} = {typeof(object).FullName};");
             }
 
+            var pathValue = Context.SourceFile.Replace("\\", "\\\\");
+            writer.WriteLine($"[Microsoft.AspNetCore.Mvc.Razor.PagePathAttribute(\"{pathValue}\")]");
             return base.BuildClassDeclaration(writer);
         }
 

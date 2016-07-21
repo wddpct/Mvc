@@ -86,7 +86,16 @@ namespace Microsoft.AspNetCore.Mvc.Razor.Internal
             }
         }
 
-        /// <inheritdoc />
+        public RoslynCompilationContext CreateCompilationContext(string assemblyName)
+        {
+            var compilation = CSharpCompilation.Create(
+                assemblyName,
+                options: _compilationOptions,
+                references: CompilationReferences);
+
+            return new RoslynCompilationContext(compilation);
+        }
+
         public CompilationResult Compile(RelativeFileInfo fileInfo, string compilationContent)
         {
             if (fileInfo == null)
@@ -100,34 +109,18 @@ namespace Microsoft.AspNetCore.Mvc.Razor.Internal
             }
 
             _logger.GeneratedCodeToAssemblyCompilationStart(fileInfo.RelativePath);
-
             var startTimestamp = _logger.IsEnabled(LogLevel.Debug) ? Stopwatch.GetTimestamp() : 0;
 
             var assemblyName = Path.GetRandomFileName();
+            var compilationContext = CreateCompilationContext(assemblyName);
 
-            var sourceText = SourceText.From(compilationContent, Encoding.UTF8);
-            var syntaxTree = CSharpSyntaxTree.ParseText(
-                sourceText,
-                path: assemblyName,
-                options: _parseOptions);
-
-            var compilation = CSharpCompilation.Create(
-                assemblyName,
-                options: _compilationOptions,
-                syntaxTrees: new[] { syntaxTree },
-                references: CompilationReferences);
-
-            compilation = Rewrite(compilation);
-
-            var compilationContext = new RoslynCompilationContext(compilation);
-            _compilationCallback(compilationContext);
-            compilation = compilationContext.Compilation;
+            AddToCompilation(compilationContext, assemblyName, compilationContent);
 
             using (var assemblyStream = new MemoryStream())
             {
                 using (var pdbStream = new MemoryStream())
                 {
-                    var result = compilation.Emit(
+                    var result = compilationContext.Compilation.Emit(
                         assemblyStream,
                         pdbStream,
                         options: new EmitOptions(debugInformationFormat: _pdbFormat));
@@ -151,6 +144,23 @@ namespace Microsoft.AspNetCore.Mvc.Razor.Internal
                     return new CompilationResult(type);
                 }
             }
+        }
+
+        /// <inheritdoc />
+        public void AddToCompilation(
+            RoslynCompilationContext compilationContext,
+            string path,
+            string compilationContent)
+        {
+            var sourceText = SourceText.From(compilationContent, Encoding.UTF8);
+            var syntaxTree = CSharpSyntaxTree.ParseText(
+                sourceText,
+                path: path,
+                options: _parseOptions);
+
+            compilationContext.Compilation = compilationContext.Compilation.AddSyntaxTrees(syntaxTree);
+            Rewrite(compilationContext);
+            _compilationCallback(compilationContext);
         }
 
         /// <summary>
@@ -184,8 +194,9 @@ namespace Microsoft.AspNetCore.Mvc.Razor.Internal
 #endif
         }
 
-        private CSharpCompilation Rewrite(CSharpCompilation compilation)
+        private void Rewrite(RoslynCompilationContext compilationContext)
         {
+            var compilation = compilationContext.Compilation;
             var rewrittenTrees = new List<SyntaxTree>();
             foreach (var tree in compilation.SyntaxTrees)
             {
@@ -196,7 +207,7 @@ namespace Microsoft.AspNetCore.Mvc.Razor.Internal
                 rewrittenTrees.Add(rewrittenTree);
             }
 
-            return compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(rewrittenTrees);
+            compilationContext.Compilation = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(rewrittenTrees);
         }
 
         // Internal for unit testing
