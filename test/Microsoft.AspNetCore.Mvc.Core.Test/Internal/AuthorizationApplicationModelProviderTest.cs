@@ -1,11 +1,16 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.Mvc.Authorization;
+using Moq;
 using Xunit;
 
 namespace Microsoft.AspNetCore.Mvc.Internal
@@ -82,6 +87,71 @@ namespace Microsoft.AspNetCore.Mvc.Internal
         }
 
         [Fact]
+        public async void CreateControllerModelAndActionModel_ChangingPolicyProvider()
+        {
+            // Arrange
+            var requirements = new IAuthorizationRequirement[] {
+                new AssertionRequirement((con) => { return true; })
+            };
+            var authorizationPolicy = new AuthorizationPolicy(requirements, new string[] { "dingos" });
+            var authorizationPolicyProvider = new ChangingAuthorizationPolicyProvider();
+
+            var provider = new AuthorizationApplicationModelProvider(authorizationPolicyProvider);
+            var defaultProvider = new DefaultApplicationModelProvider(new TestOptionsManager<MvcOptions>());
+
+            var context = new ApplicationModelProviderContext(new[] { typeof(BaseController).GetTypeInfo() });
+            defaultProvider.OnProvidersExecuting(context);
+            var authorizeData = new List<IAuthorizeData> {
+                new AuthorizeAttribute("It's a Policy!")
+            };
+
+            // Act
+            provider.OnProvidersExecuting(context);
+            var firstPolicy = await AuthorizationPolicy.CombineAsync(authorizationPolicyProvider, authorizeData);
+            var secondPolicy = await AuthorizationPolicy.CombineAsync(authorizationPolicyProvider, authorizeData);
+
+            // Assert
+            Assert.Equal(1, firstPolicy.Requirements.Count);
+            Assert.Equal(2, secondPolicy.Requirements.Count);
+        }
+
+        [Fact]
+        public async void CreateControllerModelAndActionModel_UseNonDefaultAuthorizationPolicyProvider()
+        {
+            // Arrange
+            var requirements = new IAuthorizationRequirement[] {
+                new AssertionRequirement((con) => { return true; })
+            };
+            var authorizationPolicy = new AuthorizationPolicy(requirements, new string[] { "dingos" });
+            var authorizationPolicyProviderMock = new Mock<IAuthorizationPolicyProvider>();
+            authorizationPolicyProviderMock
+                .Setup(s => s.GetPolicyAsync(It.IsAny<string>()))
+                .Returns(Task.FromResult(authorizationPolicy))
+                .Verifiable();
+            var provider = new AuthorizationApplicationModelProvider(authorizationPolicyProviderMock.Object);
+            var defaultProvider = new DefaultApplicationModelProvider(new TestOptionsManager<MvcOptions>());
+
+            var context = new ApplicationModelProviderContext(new[] { typeof(BaseController).GetTypeInfo() });
+            defaultProvider.OnProvidersExecuting(context);
+            var authorizeData = new List<IAuthorizeData> {
+                new AuthorizeAttribute("It's a Policy!")
+            };
+
+            // Act
+            provider.OnProvidersExecuting(context);
+            await AuthorizationPolicy.CombineAsync(authorizationPolicyProviderMock.Object, authorizeData);
+            await AuthorizationPolicy.CombineAsync(authorizationPolicyProviderMock.Object, authorizeData);
+
+            // Assert
+            var controller = Assert.Single(context.Result.Controllers);
+            Assert.Empty(controller.Filters);
+            var action = Assert.Single(controller.Actions);
+            Assert.Single(action.Filters);
+
+            authorizationPolicyProviderMock.Verify(s => s.GetPolicyAsync(It.IsAny<string>()), Times.Exactly(2));
+        }
+
+        [Fact]
         public void CreateControllerModelAndActionModel_NoAuthNoFilter()
         {
             // Arrange
@@ -102,6 +172,29 @@ namespace Microsoft.AspNetCore.Mvc.Internal
             Assert.Empty(controller.Filters);
             var action = Assert.Single(controller.Actions);
             Assert.Empty(action.Filters);
+        }
+
+        private class ChangingAuthorizationPolicyProvider : IAuthorizationPolicyProvider
+        {
+            public int CallCount = 0;
+
+            public Task<AuthorizationPolicy> GetDefaultPolicyAsync()
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<AuthorizationPolicy> GetPolicyAsync(string policyName)
+            {
+                CallCount++;
+
+                var authorizationPolicyBuilder = new AuthorizationPolicyBuilder();
+                for (var i = 0; i < CallCount; i++)
+                {
+                    authorizationPolicyBuilder.AddRequirements(new NameAuthorizationRequirement("require" + i));
+                }
+
+                return Task.FromResult(authorizationPolicyBuilder.Build());
+            }
         }
 
         private class BaseController
