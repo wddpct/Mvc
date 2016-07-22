@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Html;
@@ -47,7 +48,9 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
         private const string FallbackTestValueAttributeName = "asp-fallback-test-value";
         private const string AppendVersionAttributeName = "asp-append-version";
         private const string HrefAttributeName = "href";
+        private const string RelAttributeName = "rel";
         private static readonly Func<Mode, Mode, int> Compare = (a, b) => a - b;
+        private static readonly TagHelperAttribute RelAttribute = new TagHelperAttribute("rel", "stylesheet");
 
         private FileVersionProvider _fileVersionProvider;
 
@@ -90,6 +93,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                     FallbackTestValueAttributeName
                 }),
         };
+        private StringWriter _stringWriter;
 
         /// <summary>
         /// Creates a new <see cref="LinkTagHelper"/>.
@@ -210,6 +214,20 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
         // Internal for ease of use when testing.
         protected internal GlobbingUrlBuilder GlobbingUrlBuilder { get; set; }
 
+        // Shared writer for determining the string content of a TagHelperAttribute's Value.
+        private StringWriter StringWriter
+        {
+            get
+            {
+                if (_stringWriter == null)
+                {
+                    _stringWriter = new StringWriter();
+                }
+
+                return _stringWriter;
+            }
+        }
+
         /// <inheritdoc />
         public override void Process(TagHelperContext context, TagHelperOutput output)
         {
@@ -279,7 +297,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                     FallbackHref = resolvedUrl;
                 }
 
-                BuildFallbackBlock(builder);
+                BuildFallbackBlock(output.Attributes, builder);
             }
         }
 
@@ -306,7 +324,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
             }
         }
 
-        private void BuildFallbackBlock(TagHelperContent builder)
+        private void BuildFallbackBlock(TagHelperAttributeList attributes, TagHelperContent builder)
         {
             EnsureGlobbingUrlBuilder();
             var fallbackHrefs = GlobbingUrlBuilder.BuildUrlList(
@@ -341,7 +359,41 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                 .AppendHtml("\",");
 
             AppendFallbackHrefs(builder, fallbackHrefs);
-            builder.AppendHtml("</script>");
+
+            builder.AppendHtml(", \"");
+
+            var relAdded = false;
+
+            // Perf: Avoid allocating enumerator
+            for (var i = 0; i < attributes.Count; i++)
+            {
+                var attribute = attributes[i];
+                if (string.Equals(attribute.Name, HrefAttributeName, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (string.Equals(attribute.Name, RelAttributeName, StringComparison.OrdinalIgnoreCase))
+                {
+                    relAdded = true;
+                }
+
+                attribute.WriteTo(StringWriter, HtmlEncoder);
+                StringWriter.Write(' ');
+            }
+
+            if (!relAdded)
+            {
+                RelAttribute.WriteTo(StringWriter, HtmlEncoder);
+            }
+
+            var stringBuilder = StringWriter.GetStringBuilder();
+            var scriptTags = stringBuilder.ToString();
+            stringBuilder.Clear();
+            var encodedScriptTags = JavaScriptEncoder.Encode(scriptTags);
+            builder.AppendHtml(encodedScriptTags);
+
+            builder.AppendHtml("\");</script>");
         }
 
         private void AppendFallbackHrefs(TagHelperContent builder, IReadOnlyList<string> fallbackHrefs)
@@ -378,7 +430,7 @@ namespace Microsoft.AspNetCore.Mvc.TagHelpers
                 builder.AppendHtml(valueToWrite);
                 builder.AppendHtml("\"");
             }
-            builder.AppendHtml("]);");
+            builder.AppendHtml("]");
         }
 
         private void EnsureGlobbingUrlBuilder()
