@@ -120,7 +120,7 @@ namespace Microsoft.AspNetCore.Mvc.FunctionalTests
         public async Task LoaderExceptionsFromReflectionTypeLoadExceptionsAreListed()
         {
             // Arrange
-            var expectedMessage = "Failure has occurred while loading a type.";
+            var expectedMessage = "Custom Loader Exception.";
             var expectedMediaType = MediaTypeHeaderValue.Parse("text/html; charset=utf-8");
 
             // Act
@@ -130,7 +130,7 @@ namespace Microsoft.AspNetCore.Mvc.FunctionalTests
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
             Assert.Equal(expectedMediaType, response.Content.Headers.ContentType);
             var content = await response.Content.ReadAsStringAsync();
-            Assert.Contains("LoaderExceptions:", content);
+            Assert.Contains("Loader Exceptions:", content);
             Assert.Contains(expectedMessage, content);
         }
     }

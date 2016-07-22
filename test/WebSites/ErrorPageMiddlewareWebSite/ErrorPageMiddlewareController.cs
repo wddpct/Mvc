@@ -33,7 +33,9 @@ namespace ErrorPageMiddlewareWebSite
         [HttpGet("/LoaderException")]
         public IActionResult ReflectionTypeLoadException()
         {
-            throw new ReflectionTypeLoadException(new[] { typeof(SomeType) }, new[] { new TypeLoadException() });
+            throw new ReflectionTypeLoadException(
+                new[] { typeof(SomeType) },
+                new[] { new TypeLoadException("Custom Loader Exception.") });
         }
 
         private class SomeType
