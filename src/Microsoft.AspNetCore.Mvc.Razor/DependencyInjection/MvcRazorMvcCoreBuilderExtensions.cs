@@ -91,6 +91,20 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
+        public static IMvcCoreBuilder AddPrecompiledRazorViews(this IMvcCoreBuilder builder)
+        {
+            if (builder == null)
+            {
+                throw new ArgumentNullException(nameof(builder));
+            }
+
+            builder.Services.Replace(new ServiceDescriptor(
+                typeof(ICompilerCacheProvider),
+                typeof(PrecompilationCompilerCacheProvider),
+                ServiceLifetime.Singleton));
+            return builder;
+        }
+
         /// <summary>
         /// Adds an initialization callback for a given <typeparamref name="TTagHelper"/>.
         /// </summary>
@@ -165,7 +179,7 @@ namespace Microsoft.Extensions.DependencyInjection
             // creating the singleton RazorViewEngine instance.
             services.TryAddTransient<IRazorPageFactoryProvider, DefaultRazorPageFactoryProvider>();
             services.TryAddTransient<IRazorCompilationService, RazorCompilationService>();
-            services.TryAddTransient<IMvcRazorHost,MvcRazorHost>();
+            services.TryAddTransient<IMvcRazorHost, MvcRazorHost>();
 
             // This caches Razor page activation details that are valid for the lifetime of the application.
             services.TryAddSingleton<IRazorPageActivator, RazorPageActivator>();

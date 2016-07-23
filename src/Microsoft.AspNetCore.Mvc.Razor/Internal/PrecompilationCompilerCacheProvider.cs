@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using Microsoft.AspNetCore.Mvc.Razor.Internal;
 using Microsoft.Extensions.PlatformAbstractions;
 
-namespace Microsoft.AspNetCore.Mvc.Razor.Precompilation
+namespace Microsoft.AspNetCore.Mvc.Razor.Internal
 {
     public class PrecompilationCompilerCacheProvider : ICompilerCacheProvider
     {
@@ -19,7 +18,7 @@ namespace Microsoft.AspNetCore.Mvc.Razor.Precompilation
             var precompiledViews = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
             foreach (var assemblyPath in Directory.EnumerateFiles(PlatformServices.Default.Application.ApplicationBasePath, "*.dll"))
             {
-                var assembly = LoadStream(assemblyPath);
+                var assembly = LoadFrom(assemblyPath);
                 if (assembly != null)
                 {
                     foreach (var type in assembly.ExportedTypes)
@@ -40,14 +39,14 @@ namespace Microsoft.AspNetCore.Mvc.Razor.Precompilation
         /// <inheritdoc />
         public ICompilerCache Cache { get; }
 
-        private Assembly LoadStream(string path)
+        private static Assembly LoadFrom(string path)
         {
             try
             {
 #if NET451
                 return Assembly.LoadFrom(path);
 #else
-            return System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath(path);
+                return System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath(path);
 #endif
             }
             catch

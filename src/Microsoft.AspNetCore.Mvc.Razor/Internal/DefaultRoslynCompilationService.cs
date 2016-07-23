@@ -86,16 +86,6 @@ namespace Microsoft.AspNetCore.Mvc.Razor.Internal
             }
         }
 
-        public RoslynCompilationContext CreateCompilationContext(string assemblyName)
-        {
-            var compilation = CSharpCompilation.Create(
-                assemblyName,
-                options: _compilationOptions,
-                references: CompilationReferences);
-
-            return new RoslynCompilationContext(compilation);
-        }
-
         public CompilationResult Compile(RelativeFileInfo fileInfo, string compilationContent)
         {
             if (fileInfo == null)
@@ -111,31 +101,24 @@ namespace Microsoft.AspNetCore.Mvc.Razor.Internal
             _logger.GeneratedCodeToAssemblyCompilationStart(fileInfo.RelativePath);
             var startTimestamp = _logger.IsEnabled(LogLevel.Debug) ? Stopwatch.GetTimestamp() : 0;
 
-            var assemblyName = Path.GetRandomFileName();
-            var compilationContext = CreateCompilationContext(assemblyName);
-
-            AddToCompilation(compilationContext, assemblyName, compilationContent);
-
             using (var assemblyStream = new MemoryStream())
             {
                 using (var pdbStream = new MemoryStream())
                 {
-                    var result = compilationContext.Compilation.Emit(
+                    var result = EmitAssembly(
+                        compilationContent,
                         assemblyStream,
-                        pdbStream,
-                        options: new EmitOptions(debugInformationFormat: _pdbFormat));
+                        pdbStream);
 
                     if (!result.Success)
                     {
+                        var assemblyName = Path.GetRandomFileName();
                         return GetCompilationFailedResult(
                             fileInfo.RelativePath,
                             compilationContent,
                             assemblyName,
                             result.Diagnostics);
                     }
-
-                    assemblyStream.Seek(0, SeekOrigin.Begin);
-                    pdbStream.Seek(0, SeekOrigin.Begin);
 
                     var assembly = LoadStream(assemblyStream, pdbStream);
                     var type = assembly.GetExportedTypes().FirstOrDefault(a => !a.IsNested);
@@ -147,20 +130,35 @@ namespace Microsoft.AspNetCore.Mvc.Razor.Internal
         }
 
         /// <inheritdoc />
-        public void AddToCompilation(
-            RoslynCompilationContext compilationContext,
-            string path,
-            string compilationContent)
+        public EmitResult EmitAssembly(
+            string compilationContent,
+            Stream assemblyStream,
+            Stream pdbStream)
         {
             var sourceText = SourceText.From(compilationContent, Encoding.UTF8);
             var syntaxTree = CSharpSyntaxTree.ParseText(
                 sourceText,
-                path: path,
                 options: _parseOptions);
 
-            compilationContext.Compilation = compilationContext.Compilation.AddSyntaxTrees(syntaxTree);
+            var compilation = CSharpCompilation.Create(
+                Guid.NewGuid().ToString(),
+                syntaxTrees: new[] { syntaxTree },
+                options: _compilationOptions,
+                references: CompilationReferences);
+
+            var compilationContext = new RoslynCompilationContext(compilation);
             Rewrite(compilationContext);
             _compilationCallback(compilationContext);
+
+            var emitResult = compilationContext.Compilation.Emit(
+                assemblyStream,
+                pdbStream,
+                options: new EmitOptions(debugInformationFormat: _pdbFormat));
+
+            assemblyStream.Seek(0, SeekOrigin.Begin);
+            pdbStream.Seek(0, SeekOrigin.Begin);
+
+            return emitResult;
         }
 
         /// <summary>

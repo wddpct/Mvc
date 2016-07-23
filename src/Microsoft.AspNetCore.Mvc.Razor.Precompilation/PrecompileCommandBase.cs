@@ -17,6 +17,8 @@ namespace Microsoft.AspNetCore.Mvc.Razor.Precompilation
 
         protected CommandOption ConfigurationOption { get; set; }
 
+        protected CommandOption ConfigureCompilationType { get; set; }
+
         protected string ProjectPath { get; private set; }
 
         public static void Register<TPrecompileCommandBase>(CommandLineApplication app) where
@@ -45,6 +47,11 @@ namespace Microsoft.AspNetCore.Mvc.Razor.Precompilation
             ConfigurationOption = app.Option(
                 "-c|--configuration", 
                 "Configuration", 
+                CommandOptionType.SingleValue);
+
+            ConfigureCompilationType = app.Option(
+                "--configure-compilation-type",
+                "Type with Configure method",
                 CommandOptionType.SingleValue);
 
             app.OnExecute((Func<int>)Execute);

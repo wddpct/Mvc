@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.AspNetCore.Mvc.Razor.Internal;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Razor.TagHelpers;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -52,6 +53,20 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             TagHelpersAsServices.AddTagHelpersAsServices(builder.PartManager, builder.Services);
+            return builder;
+        }
+
+        public static IMvcBuilder AddPrecompiledRazorViews(this IMvcBuilder builder)
+        {
+            if (builder == null)
+            {
+                throw new ArgumentNullException(nameof(builder));
+            }
+
+            builder.Services.Replace(new ServiceDescriptor(
+                typeof(ICompilerCacheProvider),
+                typeof(PrecompilationCompilerCacheProvider),
+                ServiceLifetime.Singleton));
             return builder;
         }
 

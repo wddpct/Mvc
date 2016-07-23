@@ -46,6 +46,6 @@
         "System.Runtime.Serialization.Primitives": "4.1.1-*"
       }
     },
-    "net451": {}
+    "net46": {}
   }
 }

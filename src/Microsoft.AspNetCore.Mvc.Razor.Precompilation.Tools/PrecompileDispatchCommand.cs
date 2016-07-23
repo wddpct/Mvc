@@ -36,7 +36,6 @@ namespace Microsoft.AspNetCore.Mvc.Razor.Precompilation.Tools
 
             var dispatchArgs = new List<string>
             {
-                "--debug",
                 ProjectPath,
                 "--framework",
                 FrameworkOption.Value(),
@@ -51,6 +50,12 @@ namespace Microsoft.AspNetCore.Mvc.Razor.Precompilation.Tools
 
                 dispatchArgs.Add("--output-path");
                 dispatchArgs.Add(outputPath);
+            }
+
+            if (ConfigureCompilationType.HasValue())
+            {
+                dispatchArgs.Add(ConfigureCompilationType.Template);
+                dispatchArgs.Add(ConfigureCompilationType.Value());
             }
 
             var toolName = typeof(Precompilation.Program).GetTypeInfo().Assembly.GetName().Name;
